@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>O Caso do Bilhete Misterioso</title>
+<style>
+:root{--bg:#f0ead9;--fg:#23201a;--mut:#7d7563;--line:#d6cdb4;--acc:#a8321f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121110;--fg:#ddd6c3;--mut:#8b8473;--line:#2b2924;--acc:#d4a84b}}
+:root[data-theme="dark"]{--bg:#121110;--fg:#ddd6c3;--mut:#8b8473;--line:#2b2924;--acc:#d4a84b}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Courier New',Courier,monospace;display:flex;justify-content:center}
+main{width:100%;max-width:420px;padding:28px 20px 40px}
+h1{font-size:21px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+.tag{font-size:12px;letter-spacing:.2em;color:var(--acc);margin-bottom:8px}
+p{line-height:1.55;margin:0 0 14px;font-size:14px}
+.mut{color:var(--mut)}
+button.main{width:100%;padding:13px;font:inherit;font-size:14px;letter-spacing:.05em;background:var(--fg);color:var(--bg);border:0;border-radius:3px;cursor:pointer;margin-top:10px;text-align:left}
+button.main:disabled{opacity:.35;cursor:default}
+button.alt{background:none;color:var(--fg);border:1.5px solid var(--line)}
+button.seen{background:none;color:var(--mut);border:1.5px dashed var(--line)}
+.clue{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:14px 0;font-size:14px;line-height:1.5}
+.clue b{display:block;font-size:11px;letter-spacing:.15em;color:var(--acc);margin-bottom:2px}
+.stamp{display:inline-block;border:2px solid var(--acc);color:var(--acc);padding:4px 10px;font-weight:700;letter-spacing:.15em;transform:rotate(-3deg);margin:6px 0 16px}
+.hide{display:none}
+input{width:100%;padding:12px;margin-top:10px;font:inherit;font-size:14px;background:none;color:var(--fg);border:1.5px solid var(--line);border-radius:3px}
+input:focus{outline:none;border-color:var(--acc)}
+.row{display:flex;gap:10px}
+.row button{text-align:center}
+.fb{color:var(--acc);font-size:14px;min-height:20px;margin-top:12px}
+.l{opacity:0;transform:translateY(4px);transition:opacity .6s,transform .6s}
+.l.on{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<main>
+
+<section id="intro">
+  <div class="tag">CASO Nº 1015 · CONFIDENCIAL</div>
+  <h1>O Caso do Bilhete Misterioso</h1>
+  <p>Chegou um bilhete anônimo, escrito com letra caprichada, endereçado à detetive Lívia. Dentro, só uma frase: <i>"A resposta está no fim de semana."</i></p>
+  <p class="mut">Ao estilo de Sherlock, Poirot e do bom e velho jogo Detetive: examine os locais, junte as pistas e acuse o culpado.</p>
+  <button class="main" id="start">Aceitar o caso</button>
+</section>
+
+<section id="inv" class="hide">
+  <div class="tag">INVESTIGAÇÃO</div>
+  <h1>Onde procurar?</h1>
+  <p class="mut" id="prog"></p>
+  <div id="places"></div>
+  <div id="clues"></div>
+  <button class="main" id="accuse" disabled>Fazer a acusação</button>
+</section>
+
+<section id="acc" class="hide">
+  <div class="tag">ACUSAÇÃO</div>
+  <h1 id="at"></h1>
+  <div id="opts"></div>
+  <p class="fb" id="fb"></p>
+</section>
+
+<section id="end" class="hide">
+  <div class="tag">DOSSIÊ FINAL</div>
+  <div class="stamp">CASO RESOLVIDO</div>
+  <div id="story">
+    <p class="l">Elementar, minha cara Lívia. As células cinzentas não mentem.</p>
+    <p class="l">O autor do bilhete: <b>Felipe</b>, professor de português e suspeito de caprichar na crase.</p>
+    <p class="l">Motivo: querer te conhecer melhor, fora de qualquer sala de aula.</p>
+    <h1 class="l" style="margin-top:22px">Lívia, você está intimada a trazer o plano do crime: o que fazer, que dia e em que local?</h1>
+    <button class="main l" id="yes">Aceito e vou montar o plano</button>
+    <button class="main alt l" id="think">Preciso de mais provas</button>
+  </div>
+  <div id="day" class="hide">
+    <p>Intimação aceita. Agora é com você: monte o plano do crime.</p>
+    <input id="f-what" placeholder="O que vamos fazer?">
+    <input id="f-day" placeholder="Dia e hora">
+    <input id="f-where" placeholder="Local do crime">
+    <p class="fb" id="ferr"></p>
+    <button class="main" id="go">Entregar o plano</button>
+  </div>
+  <p id="msg" class="hide"></p>
+</section>
+
+</main>
+<script>
+const PLACES=[
+ ['Biblioteca','O bilhete não tem um único erro. A vírgula está no lugar e a crase também. Quem escreve assim vive de gramática.'],
+ ['Sala de aula','Caneta vermelha no quadro e um Dom Casmurro cheio de anotações. O suspeito ainda debate se Capitu traiu, mas já decidiu outra coisa.'],
+ ['Café da esquina','O barista jura que um homem pediu dois cafés e só bebeu um. O outro esperava alguém. Alguém que talvez goste de mistério.'],
+ ['Pizzaria','Existe uma reserva para dois, em nome de "F." Para sábado ou domingo. A reserva só confirma quando a outra pessoa disser sim.']
+];
+const SUSP=[
+ ['Coronel Mostarda','Tem álibi: estava na biblioteca, com o castiçal. Tente outra vez.'],
+ ['Professor Moriarty','Vilão demais. Ele escreveria "crime", não "convite". Tente outra vez.'],
+ ['Felipe',null]
+];
+const MOT=[
+ ['Herança milionária','Nenhum testamento foi encontrado. Tente outra vez.'],
+ ['Tédio de domingo','Quem tem tédio não reserva mesa. Tente outra vez.'],
+ ['Queria te convidar para um programa a dois',null]
+];
+const $=id=>document.getElementById(id);
+let seen=new Set();
+function show(id){['intro','inv','acc','end'].forEach(s=>$(s).classList.toggle('hide',s!=id))}
+$('start').onclick=()=>{show('inv');render()};
+function render(){
+  $('places').innerHTML='';
+  PLACES.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='main'+(seen.has(i)?' seen':' alt');
+    b.textContent=(seen.has(i)?'✓ ':'→ ')+p[0];
+    b.onclick=()=>{seen.add(i);render()};
+    $('places').appendChild(b);
+  });
+  $('clues').innerHTML=[...seen].map(i=>`<div class="clue"><b>PISTA · ${PLACES[i][0].toUpperCase()}</b>${PLACES[i][1]}</div>`).join('');
+  $('prog').textContent='Locais examinados: '+seen.size+'/4. Examine ao menos 3 antes de acusar.';
+  $('accuse').disabled=seen.size<3;
+}
+$('accuse').onclick=()=>ask(SUSP,'Quem é o culpado?',()=>ask(MOT,'Qual foi o motivo?',()=>{show('end');
+  document.querySelectorAll('.l').forEach((e,i)=>setTimeout(()=>e.classList.add('on'),400+i*900));}));
+function ask(list,title,next){
+  show('acc');$('at').textContent=title;$('fb').textContent='';$('opts').innerHTML='';
+  list.forEach(([name,wrong])=>{
+    const b=document.createElement('button');b.className='main alt';b.textContent=name;
+    b.onclick=()=>{if(wrong){$('fb').textContent=wrong}else next()};
+    $('opts').appendChild(b);
+  });
+}
+$('yes').onclick=()=>{$('story').classList.add('hide');$('day').classList.remove('hide')};
+$('think').onclick=()=>{
+  $('story').classList.add('hide');
+  const m=$('msg');m.textContent='Pedido de novas provas deferido. O detetive segue à disposição, sem pressa. Como dizia Sherlock, o jogo continua.';m.classList.remove('hide');
+};
+[$('go')].forEach(b=>b.onclick=()=>{
+  const w=$('f-what').value.trim(),dd=$('f-day').value.trim(),pl=$('f-where').value.trim();
+  if(!w||!dd||!pl){$('ferr').textContent='Faltam provas: preencha os três campos.';return}
+  const d=[w,dd,pl].map(s=>s.replace(/</g,'&lt;')).join(' · ');
+  $('day').classList.add('hide');
+  const text='Caso resolvido, detetive. Meu plano do crime: '+w+'. Dia e hora: '+dd+'. Local: '+pl+'.';
+  const m=$('msg');
+  m.innerHTML='Diligência marcada: <b>'+d+'</b>. Falta só avisar o detetive.<br><br><a href="https://wa.me/?text='+encodeURIComponent(text)+'" target="_blank" rel="noopener" style="color:var(--acc)">Enviar resposta por WhatsApp</a>';
+  m.classList.remove('hide');
+});
+</script>
+</body>
+</html>
